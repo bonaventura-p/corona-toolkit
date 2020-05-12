@@ -2,12 +2,15 @@ import requests, os
 from typing import List
 import time
 
-def getJsonData(days_ago: int):
+def getJsonData(days_ago: int, env='PROD'):
     '''days_ago is number of days ago'''
-
-
-    # PRODUCTION URL 
-    receiving_function_url = 'https://europe-west1-optimum-time-233909.cloudfunctions.net/api_private'
+    
+    if env == 'PROD': 
+        receiving_function_url = 'https://europe-west1-optimum-time-233909.cloudfunctions.net/api_private'
+    elif env == 'DEV':
+        receiving_function_url = ' https://europe-west1-syncvr-dev.cloudfunctions.net/api_private'
+    else:
+        print('Select a working environment, DEV or PROD')
 
     # Set up metadata server request
     metadata_server_token_url = 'http://metadata/computeMetadata/v1/instance/service-accounts/default/identity?audience='
@@ -16,7 +19,7 @@ def getJsonData(days_ago: int):
     token_request_headers = {'Metadata-Flavor': 'Google'}
 
     end: int = int(time.time() ) *1000  # milliseconds
-    start: int = end - (1000 *60 *60 *24 * days_ago)  # milliseconds
+    start: int = end - (1000 * 60 * 60 * 24 * days_ago)  # milliseconds
 
     # Fetch the token
     token_response = requests.get(token_request_url, headers=token_request_headers)
