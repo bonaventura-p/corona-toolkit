@@ -1,5 +1,35 @@
 import requests, os
 from typing import List
+import time
+
+def getJsonData(days_ago: int):
+    '''days_ago is number of days ago'''
+
+
+    # PRODUCTION URL 
+    receiving_function_url = 'https://europe-west1-optimum-time-233909.cloudfunctions.net/api_private'
+
+    # Set up metadata server request
+    metadata_server_token_url = 'http://metadata/computeMetadata/v1/instance/service-accounts/default/identity?audience='
+
+    token_request_url = metadata_server_token_url + receiving_function_url
+    token_request_headers = {'Metadata-Flavor': 'Google'}
+
+    end: int = int(time.time() ) *1000  # milliseconds
+    start: int = end - (1000 *60 *60 *24 * days_ago)  # milliseconds
+
+    # Fetch the token
+    token_response = requests.get(token_request_url, headers=token_request_headers)
+    jwt = token_response.content.decode("utf-8")
+
+    request_url = receiving_function_url + "/v1/results?start=" + str(start) + "&end=" + str(end)
+
+    # Provide the token in the request to the receiving function
+    receiving_function_headers = {'Authorization': f'bearer {jwt}'}
+    function_response = requests.get(request_url, headers=receiving_function_headers)
+
+    return function_response.json()
+
 
 
 class MailgunClient:
@@ -37,19 +67,17 @@ class MailgunClient:
              to = ",".join(to_addresses)
 
         if attachment is None:
-            outfile = ""
-
-        else:
+            print('No attachments')
+        else: 
             if path is None:
-                outfile = attachment
+                attached_file=("attachment", (attachment, open(attachment, "rb").read()))
             else:
-                outfile = path + attachment
-
+                attached_file=("attachment", (attachment, open(path+attachment, "rb").read()))
 
         r: requests.Response = requests.post(
-            "https://api.mailgun.net/v3/sandbox792aff55bc5f460fa9f60be2d659a9ce.mailgun.org/messages",
+            "https://api.eu.mailgun.net/v3/mg.syncvr.tech/messages",
             auth=("api", self.__api_key__),
-            files=[("attachment", (attachment, open(outfile, "rb").read()))],
+            files = [attached_file],
             data={
                 "from": from_address,
                 "to": to,
@@ -63,6 +91,7 @@ class MailgunClient:
             return True
         else:
             return False
+
 
 
 
