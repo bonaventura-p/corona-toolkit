@@ -1,6 +1,6 @@
 # [cloud function daily corona update ] "
 
-from helpers.aggregation import daily_overview
+from helpers.aggregators import daily_overview
 
 import firebase_admin
 
@@ -17,7 +17,7 @@ def cloud_function_daily_aggregation(event, context):
 
 ## 2. reading data from firestore dictionary
 
-
+#change url from dev to prod
 
 
 ## 3. creating template

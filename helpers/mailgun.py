@@ -18,7 +18,9 @@ class MailgunClient:
                   text: str,
                   html: str,
                   from_address: str = None,
-                  to_addresses: List[str] = None) -> bool:
+                  to_addresses: List[str] = None,
+                  attachment: str= None,
+                  path: str = None) -> bool:
 
         if from_address is None:
             try:
@@ -34,9 +36,20 @@ class MailgunClient:
         else:
              to = ",".join(to_addresses)
 
+        if attachment is None:
+            outfile = ""
+
+        else:
+            if path is None:
+                outfile = attachment
+            else:
+                outfile = path + attachment
+
+
         r: requests.Response = requests.post(
             "https://api.mailgun.net/v3/sandbox792aff55bc5f460fa9f60be2d659a9ce.mailgun.org/messages",
             auth=("api", self.__api_key__),
+            files=[("attachment", (attachment, open(outfile, "rb").read()))],
             data={
                 "from": from_address,
                 "to": to,
@@ -50,4 +63,6 @@ class MailgunClient:
             return True
         else:
             return False
+
+
 

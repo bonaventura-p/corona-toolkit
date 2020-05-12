@@ -4,7 +4,9 @@ import time
 
 def getJsonData(days_ago: int):
     '''days_ago is number of days ago'''
-    # Make sure to replace variables with appropriate values
+
+
+    # Make sure to replace with PRODUCTION URL https://europe-west1-optimum-time-233909.cloudfunctions.net/api_private
     receiving_function_url = 'https://europe-west1-syncvr-dev.cloudfunctions.net/api_private'
 
     # Set up metadata server request

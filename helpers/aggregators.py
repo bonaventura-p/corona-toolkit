@@ -1,34 +1,73 @@
 
 #Missing import statements
+import datetime
+from typing import Dict, Any, List, Iterable
+from weasyprint import HTML
+import time
+
+from helpers.apicallers import getJsonData
+from helpers.mailgun import MailgunClient
 
 
-##getting duration and level
-html_email_template: str = """
-<html>
-	<head>
-		<style type="text/css">
-		    table {{
-		        border-collapse: collapse;
-		        width: 100%;
-				border-spacing: 10px 0;
-    		}}
 
-		    tr.border {{
-		        border-top: 1px solid #ccc;
-		    }}
+def daily_overview ():
+    '''add descr'''
 
-		    th {{
-		        text-align: left;    
-		    }}
-		</style>	
-	</head>
-	<body>
-	    <table>
-            {}
-        </table>
-	</body>
-</html>
-"""
+    data = getJsonData(days=7) #all patients
+
+    path = "/tmp/"
+
+    for patient in data['data']:
+        html_out, outfile = __corona_report__(data=patient)
+        convert_to_pdf(html_out, path + outfile) #add some return bool if success
+
+    if MailgunClient().send_mail(
+        subject="Daily Usage Update", text= "SyncVR update", html="", to_addresses = ['bonaventurapacileo@gmail.com'], attachment = outfile, path=path):
+        print("Successfully sent daily report of {}!".format(outfile))
+    else:
+        print("Sending daily report failed!")
+
+
+
+
+
+def __corona_report__(data: Dict[str, Any], appname: str = 'tech.syncvr.fysio', lang: str = 'dutch', keys: Dict[Any, Any] = coronaDict) -> str:
+    '''add description'''
+
+    patient_html: str = ""
+
+    patient_html: str = __title_row__([keys['appname'][appname][lang]])
+
+    for session in data['results'][appname]:
+
+        date = time.ctime(session['start_time'] / 1000).split()
+
+        date.pop(3)  # remove time
+
+        date = str(date[0] + " " + date[1] + " " + date[2] + " " + date[3])
+
+        patient_html += __header_row__([date, "", ""])
+
+        patient_html += __subheader_row__([keys['exercise_code'][session['exercise_code']]['name'][lang]])
+
+        patient_html += __data_row__([keys['difficulty_level']['name'][lang],
+                                      keys['difficulty_level']['levels'][lang][session['difficulty_level']], ""])
+
+        patient_html += __data_row__([keys['duration']['name'][lang], str(int(session['duration'] / 60)), #CONVERT DURATION AS WEEKLY UPDATE IN 00:00:00
+                                      keys['duration']['unit'][lang]])
+
+        for action in session['score']:
+            patient_html += __data_row__([keys['exercise_code'][session['exercise_code']]['scores'][lang][action],
+                                          str(session['score'][action]), ""])
+
+    html_out = html_email_template.format(patient_html)
+    outfile = data['patientId'] + "_" + str(datetime.datetime.now().date()) + '.pdf'
+
+    return html_out, outfile
+
+
+def convert_to_pdf(body_html: str, outfile: str):
+    return HTML(string=body_html).write_pdf(outfile, stylesheets=["style.css"])
 
 
 def __title_row__(data: List[str]) -> str:
@@ -67,10 +106,6 @@ def __subheader_row__(data: List[str]) -> str:
     return html
 
 
-def convert_to_pdf(body_html: str, outfile: str):
-    return HTML(string=body_html).write_pdf(outfile, stylesheets=["style.css"])
-
-
 coronaDict= {'exercise_code':{
     'sorting':{'name':{'english':'Sorting','dutch':'Sorteren'},'scores':{'dutch':{'sorting_objects_total':'Objecten totaal','sorting_objects_missed':'Objecten gemist',
                                                                         'sorting_objects_wrong':'Objecten verkeerd gesorteerd','sorting_objects_correct':'objecten goed gesorteerd'},
@@ -97,56 +132,29 @@ coronaDict= {'exercise_code':{
             'duration':{'name':{'english':'Duration','dutch':'Duur'},'unit':{'dutch':'minuten','english':'minutes'}},'appname':{'tech.syncvr.fysio':{'dutch':'Fitter Vandaag', 'english':'Fitter Today'}}}
 
 
+html_email_template: str = """
+<html>
+	<head>
+		<style type="text/css">
+		    table {{
+		        border-collapse: collapse;
+		        width: 100%;
+				border-spacing: 10px 0;
+    		}}
 
+		    tr.border {{
+		        border-top: 1px solid #ccc;
+		    }}
 
-
-getdata = testdata2
-appname = 'tech.syncvr.fysio'
-lang = 'dutch'
-
-
-def __corona_report__(data: Dict[str, Any], appname: str = 'tech.syncvr.fysio', lang: str = 'dutch') -> str:
-    '''add description'''
-
-    body_html: str = ""
-
-    patient_html: str = __title_row__([coronaDict['appname'][appname][lang]])
-
-    patient_apps: List[str] = []
-
-    for session in data['results'][appname]:
-
-        date = time.ctime(session['start_time'] / 1000).split()
-
-        date.pop(3)  # remove time
-
-        date = str(date[0] + " " + date[1] + " " + date[2] + " " + date[3])
-
-        patient_html += __header_row__([date, "", ""])
-
-        patient_html += __subheader_row__([coronaDict['exercise_code'][session['exercise_code']]['name'][lang]])
-
-        patient_html += __data_row__([coronaDict['difficulty_level']['name'][lang],
-                                      coronaDict['difficulty_level']['levels'][lang][session['difficulty_level']], ""])
-
-        patient_html += __data_row__([coronaDict['duration']['name'][lang], str(int(session['duration'] / 60)),
-                                      coronaDict['duration']['unit'][lang]])
-
-        for action in session['score']:
-            patient_html += __data_row__([coronaDict['exercise_code'][session['exercise_code']]['scores'][lang][action],
-                                          str(session['score'][action]), ""])
-
-    body_html = patient_html
-
-    html_out = html_email_template.format(body_html)
-    outfile = data['patientId'] + "_" + str(datetime.datetime.now().date()) + '.pdf'
-
-    return html_out, outfile
-
-
-def PdfCreator(data: Dict[str, Any]):
-    '''data is the output of the apicaller'''
-
-    for el in data['data']:
-        html_out, outfile = __corona_report__(data=el)
-        convert_to_pdf(html_out, outfile)
+		    th {{
+		        text-align: left;    
+		    }}
+		</style>	
+	</head>
+	<body>
+	    <table>
+            {}
+        </table>
+	</body>
+</html>
+"""
