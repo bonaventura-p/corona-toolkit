@@ -2,6 +2,20 @@ import requests, os
 from typing import List
 import time
 
+def blobDownloader(bucket_name, source_blob_name, destination_file_name):
+    """Downloads a blob from the bucket."""
+
+    client = storage.Client()
+    bucket = client.get_bucket(bucket_name)
+    blob = bucket.get_blob(source_blob_name)
+
+    blob.download_to_filename(destination_file_name)
+
+    print('Blob {} downloaded to {}.'.format(
+        source_blob_name,
+        destination_file_name))
+
+
 def getJsonData(days_ago: int, env='PROD'):
     '''days_ago is number of days ago'''
     

@@ -6,3 +6,6 @@ werkzeug
 pusher
 datetime
 weasyprint
+seaborn
+matplotlib
+pandas
