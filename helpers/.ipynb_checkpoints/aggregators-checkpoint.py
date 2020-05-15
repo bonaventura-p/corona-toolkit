@@ -12,6 +12,7 @@ import time
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+from google.cloud import storage
 
 from helpers.filemanager import getJsonData, MailgunClient, blobDownloader
 
