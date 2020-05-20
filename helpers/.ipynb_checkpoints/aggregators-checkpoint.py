@@ -326,6 +326,14 @@ html_email_template: str = """
 	    <table>
             {}
         </table>
+            </br>
+    </br>
+        </br>
+                            </br>
+
+                    </br>
+    </br>
+        </br>
         <table>
             {}
         </table>
