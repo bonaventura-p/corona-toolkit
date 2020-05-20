@@ -9,3 +9,4 @@ weasyprint
 seaborn
 matplotlib
 pandas
+numpy

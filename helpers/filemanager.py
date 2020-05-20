@@ -1,6 +1,8 @@
 import requests, os
 from typing import List
 import time
+from google.cloud import storage
+
 
 def blobDownloader(bucket_name, source_blob_name, destination_file_name):
     """Downloads a blob from the bucket."""
@@ -18,7 +20,7 @@ def blobDownloader(bucket_name, source_blob_name, destination_file_name):
 
 def getJsonData(days_ago: int, env='PROD'):
     '''days_ago is number of days ago'''
-    
+
     if env == 'PROD': 
         receiving_function_url = 'https://europe-west1-optimum-time-233909.cloudfunctions.net/api_private'
     elif env == 'DEV':
@@ -39,11 +41,15 @@ def getJsonData(days_ago: int, env='PROD'):
     token_response = requests.get(token_request_url, headers=token_request_headers)
     jwt = token_response.content.decode("utf-8")
 
+    print('Received token response as {}'.format(jwt))
+
     request_url = receiving_function_url + "/v1/results?start=" + str(start) + "&end=" + str(end)
 
     # Provide the token in the request to the receiving function
     receiving_function_headers = {'Authorization': f'bearer {jwt}'}
     function_response = requests.get(request_url, headers=receiving_function_headers)
+
+    print('Received function response')
 
     return function_response.json()
 
